@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// 기기 데이터 (Health Connect 동기화, FIT 업로드)
+// ─────────────────────────────────────────────
+
+/// 수치형 측정값 하나. 키는 @health/shared 의 METRICS 참고.
+model Measurement {
+  id         String   @id @default(cuid())
+  metric     String
+  value      Float
+  unit       String
+  measuredAt DateTime
+  /// 데이터를 만든 앱 (예: com.garmin.android.apps.connectmobile)
+  source     String
+  /// 원본 레코드 ID. 같은 레코드가 다시 동기화돼도 중복 저장되지 않게 한다.
+  externalId String
+  createdAt  DateTime @default(now())
+
+  @@unique([source, externalId, metric])
+  @@index([metric, measuredAt])
+}
+
+model Workout {
+  id         String   @id @default(cuid())
+  /// running, walking, cycling, strength 등
+  sport      String
+  title      String?
+  startedAt  DateTime
+  endedAt    DateTime
+  distanceM  Float?
+  calories   Float?
+  avgHr      Int?
+  maxHr      Int?
+  /// 평균 페이스 (초/km)
+  avgPaceSec Float?
+  source     String
+  externalId String
+  /// FIT 파일에서만 얻을 수 있는 상세 데이터
+  laps       Json?
+  /// [[lat, lng], ...] — 지도 표시용
+  track      Json?
+  createdAt  DateTime @default(now())
+
+  @@unique([source, externalId])
+  @@index([startedAt])
+}
+
+model SleepSession {
+  id         String   @id @default(cuid())
+  startedAt  DateTime
+  endedAt    DateTime
+  /// [{ stage: "deep" | "light" | "rem" | "awake", start, end }]
+  stages     Json?
+  source     String
+  externalId String
+  createdAt  DateTime @default(now())
+
+  @@unique([source, externalId])
+  @@index([startedAt])
+}
+
+model SyncLog {
+  id        String   @id @default(cuid())
+  deviceId  String
+  received  Int
+  inserted  Int
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// 건강검진
+// ─────────────────────────────────────────────
+
+model Checkup {
+  id          String          @id @default(cuid())
+  date        DateTime        @db.Date
+  institution String?
+  memo        String?
+  /// 업로드한 결과지 PDF 경로 (uploads/ 아래)
+  reportFile  String?
+  results     CheckupResult[]
+  createdAt   DateTime        @default(now())
+}
+
+model CheckupResult {
+  id        String  @id @default(cuid())
+  checkupId String
+  checkup   Checkup @relation(fields: [checkupId], references: [id], onDelete: Cascade)
+  /// @health/shared CHECKUP_ITEMS 의 키, 또는 자유 입력 항목명
+  item      String
+  value     Float?
+  /// 소변검사 "음성" 등 수치가 아닌 결과
+  textValue String?
+  unit      String?
+  /// 결과지에 적힌 참고치 (없으면 CHECKUP_ITEMS 기본값 사용)
+  refLow    Float?
+  refHigh   Float?
+
+  @@unique([checkupId, item])
+}
+
+// ─────────────────────────────────────────────
+// 복약
+// ─────────────────────────────────────────────
+
+model Medication {
+  id           String               @id @default(cuid())
+  name         String
+  /// 예: "500mg 1정"
+  dosage       String?
+  /// 성분명 (예: atorvastatin). 주치의 규칙이 약 종류를 판별할 때 이름보다 우선한다
+  ingredient   String?
+  /// 예: "식후 30분"
+  instructions String?
+  startDate    DateTime             @db.Date
+  endDate      DateTime?            @db.Date
+  active       Boolean              @default(true)
+  memo         String?
+  schedules    MedicationSchedule[]
+  logs         MedicationLog[]
+  createdAt    DateTime             @default(now())
+}
+
+model MedicationSchedule {
+  id           String     @id @default(cuid())
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  /// "08:00" 형식 (KST)
+  timeOfDay    String
+  /// 0=일 ~ 6=토. 비어 있으면 매일
+  daysOfWeek   Int[]
+}
+
+model MedicationLog {
+  id           String     @id @default(cuid())
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  scheduledFor DateTime
+  takenAt      DateTime?
+  /// taken | skipped | missed
+  status       String
+
+  @@unique([medicationId, scheduledFor])
+  @@index([scheduledFor])
+}
+
+// ─────────────────────────────────────────────
+// 코치 · 주치의
+// ─────────────────────────────────────────────
+
+/// 내 정보. 한 행만 쓴다 (id = "me")
+model Profile {
+  id             String   @id @default("me")
+  birthYear      Int?
+  /// male | female
+  sex            String?
+  heightCm       Float?
+  targetWeightKg Float?
+  /// lose | maintain | gain
+  goal           String   @default("maintain")
+  /// 직접 잰 최대 심박. 없으면 나이로 추정
+  maxHr          Int?
+  /// 보유 덤벨 무게 목록 (kg)
+  dumbbellsKg    Float[]
+  hasPullUpBar   Boolean  @default(false)
+  hasIndoorBike  Boolean  @default(false)
+  /// 주간 목표 횟수
+  weeklyRuns     Int      @default(3)
+  weeklyRides    Int      @default(1)
+  weeklyStrength Int      @default(2)
+  /// 부상·통증 이력 등 자유 메모
+  notes          String?
+  updatedAt      DateTime @updatedAt
+}
+
+/// 아침 컨디션 체크
+model DailyCheckIn {
+  id        String   @id @default(cuid())
+  /// KST 날짜
+  date      DateTime @unique @db.Date
+  /// 1(매우 피곤) ~ 5(최상)
+  energy    Int
+  /// 1(낮음) ~ 5(높음)
+  stress    Int
+  /// 근육통 부위 (chest, back, quads ...)
+  soreness  String[]
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+/// 근력 운동 한 세트 (동기화 앱에서 기록)
+model StrengthSet {
+  id          String   @id @default(cuid())
+  performedAt DateTime
+  /// @health/coach EXERCISES 의 키
+  exercise    String
+  /// 맨몸 운동은 0
+  weightKg    Float    @default(0)
+  reps        Int
+  createdAt   DateTime @default(now())
+
+  @@index([performedAt])
+}
+
+/// 식약처 식품영양성분 DB (음식). jobs 의 import-foods 로 채운다
+model Food {
+  id          String      @id
+  name        String
+  category    String?
+  /// 1회 제공량 (g 또는 ml)
+  servingSize Float?
+  /// 아래 영양성분은 100g(ml) 기준
+  kcal        Float
+  proteinG    Float?
+  fatG        Float?
+  carbsG      Float?
+  sugarG      Float?
+  sodiumMg    Float?
+  meals       MealEntry[]
+
+  @@index([name])
+}
+
+model MealEntry {
+  id       String   @id @default(cuid())
+  eatenAt  DateTime
+  /// breakfast | lunch | dinner | snack
+  mealType String
+  foodId   String?
+  food     Food?    @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  /// 기록 당시 이름과 영양값을 그대로 저장 (DB 가 갱신돼도 과거 기록 유지)
+  name     String
+  amountG  Float
+  kcal     Float
+  proteinG Float    @default(0)
+  fatG     Float    @default(0)
+  carbsG   Float    @default(0)
+  sodiumMg Float    @default(0)
+
+  @@index([eatenAt])
+}
+
+/// 하루 코칭 결과 스냅샷. 아침 알림과 웹이 같은 처방을 보도록 저장한다
+model DailyPlan {
+  id         String    @id @default(cuid())
+  date       DateTime  @unique @db.Date
+  readiness  Int
+  /// @health/coach DailyCoaching 전체
+  data       Json
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}

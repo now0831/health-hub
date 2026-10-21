@@ -1,0 +1,9 @@
+node_modules/
+.turbo/
+.env
+.env*.local
+*.tsbuildinfo
+.DS_Store
+
+# 업로드된 원본 파일 (FIT, 검진 PDF) — 개인 건강정보이므로 커밋 금지
+uploads/

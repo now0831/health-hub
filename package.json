@@ -1,0 +1,27 @@
+{
+  "name": "health-hub",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "jobs"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --filter=@health/web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "npm run migrate -w @health/db",
+    "db:studio": "npm run studio -w @health/db",
+    "app": "npm run start -w @health/sync-app"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  },
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

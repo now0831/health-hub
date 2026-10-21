@@ -1,0 +1,21 @@
+{
+  "name": "@health/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "mark-missed-doses": "tsx --env-file=../.env src/mark-missed-doses.ts",
+    "weekly-report": "tsx --env-file=../.env src/weekly-report.ts",
+    "typecheck": "tsc --noEmit",
+    "import-foods": "tsx --env-file=../.env src/import-foods.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@health/db": "*",
+    "exceljs": "^4.4.0"
+  }
+}

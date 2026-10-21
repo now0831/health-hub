@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8fa;
+  --surface: #ffffff;
+  --foreground: #171717;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #0f766e;
+  /* 상태 색 — 항상 아이콘·라벨과 함께 쓴다 (색만으로 의미를 전달하지 않음) */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+}
+
+@theme inline {
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-serious: var(--serious);
+  --color-critical: var(--critical);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0b0d10;
+    --surface: #14171c;
+    --foreground: #ededed;
+    --muted: #9ca3af;
+    --line: #262a31;
+    --accent: #2dd4bf;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

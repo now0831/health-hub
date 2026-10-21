@@ -1,0 +1,21 @@
+{
+  "name": "@health/ingest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types src/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@garmin/fitsdk": "^21.218.0",
+    "@health/shared": "*"
+  }
+}

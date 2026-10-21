@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalEnv": ["DATABASE_URL", "SYNC_TOKEN"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build", "@health/db#generate"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "generate": {
+      "cache": false
+    },
+    "dev": {
+      "dependsOn": ["@health/db#generate"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["@health/db#generate"]
+    },
+    "test": {}
+  }
+}

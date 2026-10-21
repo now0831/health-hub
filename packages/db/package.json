@@ -1,0 +1,28 @@
+{
+  "name": "@health/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy",
+    "studio": "prisma studio",
+    "typecheck": "tsc --noEmit",
+    "db:dev": "prisma dev --name health",
+    "migrate:new": "prisma migrate dev"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/pg": "^8.23.1",
+    "prisma": "^7.10.1",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "pg": "^8.23.1"
+  }
+}
